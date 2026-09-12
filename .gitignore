@@ -1,0 +1,20 @@
+# Fetched/recorded ASL sign clips — large binary media, and WLASL-sourced
+# clips are under a no-redistribution research license (C-UDA). Don't commit.
+assets/signs/*
+assets/fingerspell/*
+!assets/signs/.gitkeep
+!assets/fingerspell/.gitkeep
+
+# WLASL dataset metadata (downloaded per README instructions, ~12MB)
+WLASL_v0.3.json
+WLASL_*.json
+
+# ASLLVD glossing spreadsheet (auto-downloaded/cached by fetch_asllvd_signs.py, ~1.5MB)
+scripts/asllvd_glossing.xlsx
+
+# Download logs
+*.log
+
+.DS_Store
+__pycache__/
+*.pyc
