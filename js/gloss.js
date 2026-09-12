@@ -32,11 +32,17 @@ export function englishToGloss(sentenceText) {
     return { glossTokens: [], sentenceType: "statement", raw: sentenceText };
   }
 
+  // "Do not touch that" (imperative: verb right after "not") vs. "Do not
+  // you like pizza" / expanded "don't you like pizza" (question: subject
+  // pronoun right after "not") look identical up to that point — the
+  // pronoun check is what tells them apart.
+  const isDoNotImperative = tokens[0] === "do" && tokens[1] === "not" && !LEXICON.pronouns.includes(tokens[2]);
+
   const whIndex = tokens.findIndex((t) => LEXICON.whWords.includes(t));
   let sentenceType = "statement";
   if (whIndex !== -1) {
     sentenceType = "wh-question";
-  } else if (hasQuestionMark || LEXICON.ynAuxiliaries.includes(tokens[0])) {
+  } else if (!isDoNotImperative && (hasQuestionMark || LEXICON.ynAuxiliaries.includes(tokens[0]))) {
     sentenceType = "yn-question";
   }
 

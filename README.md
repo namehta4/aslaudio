@@ -77,6 +77,19 @@ shifting, and non-manual (facial/body) grammar that a linear gloss stream
 cannot represent. Treat the gloss/sentence-type badges as a teaching aid, not
 ground truth.
 
+Known gaps in the gloss rules, found by testing ~50 varied sentences (not
+fixed — they'd need real parsing, not just more lexicon entries):
+- A wh-word used to introduce a clause rather than ask a question ("**When**
+  you arrive, call me") gets misread as a WH-question and reordered wrong —
+  the rules can't tell subordinate-clause "when" from question "when"
+  without checking for subject-aux inversion, which this system doesn't do.
+- "**How many** people are coming" splits "how" to the sentence end but
+  leaves "many" behind, breaking up the idiomatic pair.
+- Negating a non-final clause ("I do not think I want it") always attaches
+  NOT to the last verb, not necessarily the one actually being negated.
+- Immediately repeated words from disfluent speech ("I I want...") aren't
+  deduplicated.
+
 ## Running it
 
 ```bash
@@ -178,7 +191,11 @@ picks them up automatically, no code changes needed:
   Lookup tries the word as spoken and simple singular/base-verb forms.
 - `assets/fingerspell/<LETTER>.mp4` (or image) — one clip per uppercase
   letter, e.g. `assets/fingerspell/A.mp4`, used when a whole-word sign isn't
-  found and fingerspelling is enabled.
+  found and fingerspelling is enabled. ASLLVD has all 26 manual-alphabet
+  letters as their own glosses (`A`–`Z`) — `fetch_asllvd_signs.py --all`
+  already fetches them into `assets/signs/` like any other word, so this
+  directory just needs those same 26 files copied over and re-cased, e.g.:
+  `for l in {a..z}; do cp assets/signs/$l.mp4 assets/fingerspell/${l^^}.mp4; done`
 
 With no assets at all, the app still runs end-to-end and shows the gloss as
 on-screen captions — useful for testing the recognition/translation pipeline
