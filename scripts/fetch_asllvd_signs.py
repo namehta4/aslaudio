@@ -50,10 +50,18 @@ VIDEO_BASE_URL = "http://csr.bu.edu/ftp/asl/asllvd/asl-data2/quicktime"
 # real data — the header row has ambiguous duplicate labels so we index by
 # position rather than name.
 COL_GLOSS = 3
+COL_CONSULTANT = 2
 COL_SESSION = 12
 COL_SCENE = 13
 COL_START = 14
 COL_END = 15
+
+# Concatenating clips from many different signers/backgrounds looks
+# fragmented — sticking to one person as much as possible makes playback
+# far more visually consistent. Liz alone covers 92% of our vocabulary,
+# Liz+Brady together 98%, so we prefer them in this order and only fall
+# back to other signers for the rare word neither of them has.
+PREFERRED_SIGNERS = ["Liz", "Brady"]
 
 # ASLLVD's raw gloss list includes many linguistic-annotation variants
 # (e.g. "1p-help:i", "(y)bull", "(s)old+five_2") that the app's dictionary
@@ -113,16 +121,24 @@ def parse_gloss_index(xlsx_path):
     for row in rows:
         if len(row) <= COL_END:
             continue
-        gloss, session, scene, start, end = (
-            row[COL_GLOSS], row[COL_SESSION], row[COL_SCENE], row[COL_START], row[COL_END]
+        gloss, consultant, session, scene, start, end = (
+            row[COL_GLOSS], row[COL_CONSULTANT], row[COL_SESSION], row[COL_SCENE], row[COL_START], row[COL_END]
         )
         if not gloss or gloss == "============" or not session:
             continue
         if not all(isinstance(v, (int, float)) for v in (scene, start, end)):
             continue
         by_gloss.setdefault(gloss.strip().upper(), []).append(
-            {"session": session, "scene": scene, "start": int(start), "end": int(end)}
+            {"consultant": consultant, "session": session, "scene": scene, "start": int(start), "end": int(end)}
         )
+
+    def signer_rank(instance):
+        consultant = instance.get("consultant")
+        return PREFERRED_SIGNERS.index(consultant) if consultant in PREFERRED_SIGNERS else len(PREFERRED_SIGNERS)
+
+    for instances in by_gloss.values():
+        instances.sort(key=signer_rank)
+
     return by_gloss
 
 

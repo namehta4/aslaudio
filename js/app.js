@@ -108,8 +108,19 @@ function updateLanguageNote() {
     languageNote.hidden = true;
     return;
   }
-  const label = languageSelect.selectedOptions[0].textContent;
+
   languageNote.hidden = false;
+
+  if (languageSelect.value === "auto") {
+    languageNote.textContent =
+      "Detecting the spoken language automatically per chunk, then translating it → English via a " +
+      "local Whisper model (runs fully in-browser). Adds a bit of extra latency per chunk for detection " +
+      "on top of the usual few-seconds-per-chunk delay, and downloads a ~500MB model the first time you " +
+      "click Start.";
+    return;
+  }
+
+  const label = languageSelect.selectedOptions[0].textContent;
   languageNote.textContent =
     `Translating ${label} → English via a local Whisper model (runs fully in-browser). ` +
     "Transcribes in a few seconds per chunk rather than live word-by-word, and downloads a " +

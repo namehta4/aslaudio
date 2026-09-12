@@ -42,6 +42,19 @@ dependencies.
    wrong translations for languages less close to English (Japanese, in
    testing) even though they were fine for Spanish, so don't downgrade this
    without re-testing on more than one language family.
+
+   **Auto-detect**: transformers.js doesn't implement real language
+   auto-detection itself — passing no language just hardcodes English
+   ([known upstream gap](https://github.com/huggingface/transformers.js/issues/302),
+   an attempted fix was closed unmerged). The "Auto-detect (any language)"
+   option works around this by calling Whisper's model directly: it's
+   trained to emit a `<|xx|>` language token as its very first output when
+   given only the start-of-transcript token, so `detectLanguage()` in
+   `js/whisperSpeech.js` runs one cheap single-token generation (bypassing
+   the pipeline's automatic init-token forcing via `decoder_input_ids`) to
+   read Whisper's own best guess before running the real translate call.
+   Verified correct against real Spanish, Japanese, and English audio.
+   Adds a bit of latency per chunk on top of the usual translate delay.
 2. **English → ASL gloss** (`js/gloss.js`) — a rule-based translator that
    approximates common ASL-101 grammar points:
    - drops articles (`a`/`an`/`the`), fillers (`to` as an infinitive marker,

@@ -53,6 +53,39 @@ function isLikelyHallucination(text) {
 }
 
 /**
+ * Detects the spoken language of an audio chunk using Whisper's own
+ * language-token prediction, since transformers.js doesn't expose this
+ * itself (it just hardcodes English when no language is given — see
+ * https://github.com/huggingface/transformers.js/issues/302). Whisper is
+ * trained to emit a `<|xx|>` language token as the very first output when
+ * given only the start-of-transcript token, so a single cheap one-token
+ * generation (skipping the pipeline's automatic language forcing by
+ * supplying decoder_input_ids directly) reveals its own best guess.
+ * Returns a 2-letter language code (e.g. "es", "ja"), which Whisper also
+ * accepts directly as the `language` option for the real transcribe/
+ * translate call.
+ */
+async function detectLanguage(transcriber, audio) {
+  const { model, processor } = transcriber;
+  const inputs = await processor(audio);
+  const startTokenId = model.generation_config.decoder_start_token_id;
+
+  const output = await model.generate({
+    inputs: inputs.input_features,
+    decoder_input_ids: [[startTokenId]],
+    max_new_tokens: 1
+  });
+
+  const sequence = (output.sequences ?? output).tolist()[0];
+  const predictedId = Number(sequence[sequence.length - 1]);
+
+  for (const [token, id] of Object.entries(model.generation_config.lang_to_id)) {
+    if (id === predictedId) return token.replace(/[<|>]/g, "");
+  }
+  return "en";
+}
+
+/**
  * Speech recognition that runs entirely in-browser via a local Whisper
  * model (transformers.js, WASM/WebGPU) — no server, no browser-vendor
  * SpeechRecognition API required. Works in Firefox/Safari, unlike
@@ -237,8 +270,13 @@ export class WhisperSpeechController {
     const audio = await this._decodeToFloat32(blob);
     if (audio.length / SAMPLE_RATE < MIN_AUDIO_SECONDS) return;
 
-    const language = this.getLanguage();
+    let language = this.getLanguage();
     const transcriber = await this._getTranscriber();
+
+    if (language === "auto") {
+      language = await detectLanguage(transcriber, audio);
+    }
+
     // no_repeat_ngram_size guards against Whisper getting stuck in a
     // repetition loop ("you you you you") on borderline/noisy audio.
     // For non-English input, Whisper's own translate task converts
